@@ -100,7 +100,7 @@ library(usethis)
 library(here)
 
 use_course(
-  url = "https://github.com/worldbank/dime-transport-training/archive/main.zip",
+  url = "https://github.com/dime-worldbank/dime-transport-training/archive/main.zip",
   destdir = "YOURFOLDERPATHHERE"
 )
 
