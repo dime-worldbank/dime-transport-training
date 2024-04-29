@@ -1,0 +1,818 @@
+---
+title: "Introductory Module - R"
+subtitle: "GIS for Transport"
+author: "Christine Okeyo, Robert Marty, Luis Eduardo San Martin"
+institute: Development Impact (DIME)
+date: "April 2024"
+date-format: "MMMM, YYYY"
+bibliography: bib/template.bib
+format:
+  dime-revealjs:
+    # Output file
+    output-file: 01_introductory_module_R.html
+    # Table of Contents
+    toc: true
+    toc_float: true
+    toc-depth: 1
+    toc-location: body
+    toc-title: "Contents"
+    # Generate a self contained file
+    self-contained: true
+    self-contained-math: true
+    # Turn preview links within the presentation off (all links open in a new tab)
+    preview-links: false
+    # Logo and footer options
+    logo: "logos/DIME_COLOR.png"
+    footer: ""
+---
+
+```{r Setup}
+#| include: false
+# Add default ggplot theme. This can be overridden by your own theme at
+# the end of the ggplot graph.
+
+# DIME:
+source("_extensions/dime-worldbank/dime/setup_dime_palettes.R")
+source("_extensions/dime-worldbank/dime/setup_ggplot2_dime.R")
+# Worldbank:
+# source("_extensions/dime/setup_dime_palettes.R")
+# source("_extensions/dime/setup_ggplot2_dime.R")
+```
+
+```{r, packages}
+#| echo: false
+#| eval: true
+library(dplyr)
+library(sf)
+library(readr)
+library(purrr)
+library(here)
+
+```
+
+# About this module {background-color="#07202E"}
+## About this module
+
+- This module will review key R fundamentals that will be useful and be applied in the subsequent modules.
+
+## Format
+- These are hands-on sessions. You are strongly encouraged to follow along in your computer what the presenter is doing
+
+- The sessions include exercises. You will be given 3-4 minutes to solve each exercise before we show the solution
+
+# R programming basics {background-color="#07202E"}
+## R Objects
+
+Objects are the __building blocks of R programming.__
+
+### What is an object?
+
+* An object is __something you can refer to later__ in your code to get a value
+
+* __You can put anything into an object __ : scalars, strings, datasets, vectors, plots, functions, etc.
+
+- Objects also have attributes that can be used to manipulate them
+
+## Object classes
+
+Some essential object classes include;
+
+* __Vectors:__ an uni-dimensional object that __stores a sequence of values of the same class__
+
+* __Data frames:__ a combination of different vectors of the same length (the same as
+your dataset in Excel)
+
+* __Lists:__ a multidimensional object that can store several objects __of different classes and dimensions__
+
+
+# Setup {background-color="#07202E"}
+
+## Setup
+
+```{r}
+#| echo: true
+#| eval: false
+
+install.packages("usethis")
+install.packages("here")
+
+library(usethis)
+library(here)
+
+use_course(
+  url = "https://github.com/worldbank/gis-transport-training/archive/main.zip",
+  destdir = "YOURFOLDERPATHHERE"
+)
+
+```
+
+
+## File paths
+
+```{r, file_paths}
+#| echo: true
+#| eval: true
+#| 
+data_dir <- here("DataWork", "DataSets", "Final")
+
+print(data_dir)
+```
+
+## File paths
+Load the schools and country data.
+
+- The school names data contains names of all the schools in Kenya
+- The school coordinates data contains geographical information of the respective schools
+
+
+```{r, dataframe}
+#| echo: true
+#| eval: true
+
+school_names <- read.csv(file.path(data_dir, "school_names.csv"))
+
+school_coordinates <- read.csv(file.path(data_dir, "school_coordinates.csv"))
+
+```
+
+# Installing and Loading Packages {background-color="#07202E"}
+
+## Packages
+Another important aspect to consider is R packages. Consider the following: 
+
+::: {.columns .h-center-container}
+::: {.column width="45%"}
+#### R is a new phone
+
+![](https://images-na.ssl-images-amazon.com/images/I/81F-QC1N5WL._AC_SY550_.jpg)
+:::
+
+::: {.column width="45%"}
+
+#### R packages are apps in your phone
+
+![](https://www.apple.com/v/app-store/a/images/meta/og__c59t0pflacq6.png?202009232211)
+
+
+:::
+:::
+
+## Packages
+
+### To install a package you can run the following command:
+
+```{r, echo = TRUE, eval = FALSE, include = TRUE}
+
+# To install
+install.packages("dplyr")
+install.packages("sf")
+install.packages("purrr")
+install.packages("readr")
+install.packages("here")
+install.packages("ggplot2")
+
+```
+
+* R packages need to be loaded in each R session that will use them. 
+* That means that, for example, a function that comes from the `sf` package cannot be used if the package has not been installed and loaded first. 
+
+### To load a package you can run the following command:
+
+```{r, echo = TRUE, eval = FALSE, include = TRUE}
+
+# To load
+library(dplyr) # To wrangle data
+library(sf) # Package for manipulating gis data
+library(purrr)
+library(readr)
+library(ggplot2)
+```
+
+> *Notes*: Remember you should always load your packages before your start coding.
+
+
+# Functions {background-color="#07202E"}
+
+## Quick intro to functions
+
+* `head()`, `View()`, `filter()` and`read.csv()` are functions.
+
+* Functions in R take **named arguments** 
+
+* Type `help(filter)` in the console to check the arguments of the `filter()` function
+
+## Quick intro to functions
+
+* When we used `filter(school_names, name == "Consolata School")` we're implicitly telling R that the `x` argument is `school_names` and the `subset` argument is `name == "Consolata School"`
+
+* For example, see below:
+
++ `filter(school_names, name == "Consolata School")`
+
+## Quick intro to functions
+
+* Arguments are always enclosed in parentheses
+
+* Usually the first argument is the object you want to use the function on, e.g. `filter(school_names, ...)`
+
+* Functions usually return values that you can store in an object, print or use directly as an argument of another function.
+
+We will explore these ideas in depth in a later session.
+
+# Data in R {background-color="#07202E"}
+
+## Loading a dataset in R
+Before we start wrangling our data, let's read our datasets. We can use the `read.csv` function if we want to load the csv files with the school names and coordinates
+
+**Exercise 1:** Loading data in R
+
+Use either of the functions mentioned above and load the two datasets from your working directory
+
+**Solution:**
+
+```{r, loading_data}
+#| echo: true
+#| eval: false
+
+school_names <- read.csv(file.path(data_dir, "school_names.csv"))
+
+school_coordinates <- read.csv(file.path(data_dir, "school_coordinates.csv"))
+
+```
+
+
+# Exploring data {background-color="#07202E"}
+## Exploring a data set
+
+These are some useful functions from base R: 
+
+* `View()`: open the data set.
+* `class()`: reports object type of type of data stored.
+* `dim()`: reports the size of each one of an object's dimension.
+* `names()`: returns the variable names of a dataset.
+* `str()`: general information on an R object.
+* `summary()`: summary information about the variables in a data frame.
+* `head()`: shows the first few observations in the dataset.
+* `tail()`: shows the last few observations in the dataset.
+
+Some other useful functions from the dplyr:
+
+* `glimpse()`: get a glimpse of your data.
+
+## Load and show a dataset
+
+We can just show our dataset using the name of the object; in this case, `school_names`. 
+
+```{r show}
+#| echo: true
+school_names
+```
+
+## Glimpse your data
+
+Use `glimpse()` to get information about your variables (e.g., type, row, columns,)
+
+```{r glimpse}
+#| echo: true
+school_names %>% 
+  glimpse()
+
+```
+
+## Dimensions of your data
+Let's see first how many columns and observations the dataset has: 
+
+* **Dimensions of your data** (Rows and Columns): 
+
+```{r dim}
+#| echo: true
+
+dim(school_names)
+
+```
+
+* **The number of distinct values of a particular variable**:
+```{r, eval = FALSE}
+n_distinct(DATASET$variable, na.rm = TRUE)
+```
+
+The `$` sign is a subsetting operator. In R, we have three subsetting operators (`[[`, `[`, and `$`.). It is often used to access variables in a dataframe. 
+
+The `n_distinct` function allows us to count the number of unique values of a variable length of a vector. We included `na.rm = TRUE`, so we don't count missing values.
+
+## Dimensions of your data
+
+**Exercise 2**: 
+Identify distinct values of a variable in a dataset. Using the `n_distinct` function, can you tell how many unique values these variables in the `school_names` dataset have?
+
+1. name
+2. amenity
+
+**Solution**:
+
+```{r distinct_val}
+#| echo: true
+
+## R Code
+n_distinct(school_names$name, na.rm = TRUE)
+n_distinct(school_names$amenity, na.rm = TRUE)
+
+```
+
+# Data Cleaning {background-color="#07202E"}
+## Renaming variables
+
+If we want to to rename our variables, we could use `rename()` function from `dplyr` package:
+```{r, echo = TRUE, eval = FALSE, include = TRUE}
+
+school_names <- school_names %>% 
+  rename( 
+    var_newname = var_oldname 
+  ) 
+
+```
+
+## Subsetting data
+
+We can subset data using the `filter` function from __dplyr package__
+
+### dplyr::filter
+Let's try filtering all the rows where school name is "Baptist Primary School" from the `school_names` data.
+
+```{r missings}
+#| echo: true
+
+filter(school_names, name=="Baptist Primary School") 
+
+```
+
+## Piping
+
+* Ever heard of piping? It's this: `%>%`
+
+* Piping is a way of doing metaprogramming
+
+* The actual meaning of the pipes is: *Pipes take the __output__ of the function at the left and pass it as the __first argument__ of the function at the right*
+
+* The advantages of using piping is that it allows to have a cleaner division of successively applied functions in R code, __drastically improving code readability__
+
+## Piping
+
+```{r, pipe1}
+#| echo: true
+#| eval: false
+
+# 1: Doing it the long way -----------------------------
+school_names <- filter(school_names, name =="Baptist Primary School")
+school_names <- select(school_names, name)
+
+# 2: With pipes ------------------------------------
+school_names %>%
+  filter(name=="Baptist Primary School") %>%
+  select(name)
+```
+
+Just remember:
+
+* `x %>% f()` is the same as `f(x)`
+
+* `x %>% f() %>% g()` is the same as `g(f(x))`
+
+
+## Merging data sets
+
+We can use the `left_join()` function to merge two dataframes. The function syntax is: `left_join(a_df, another_df, by = c("id_col1"))`. 
+
+> A left join takes all the values from the first table, and looks for matches in the second table. If it finds a match, it adds the data from the second table; if not, it adds missing values. 
+
+## Merging data sets
+
+**Exercise 3:** Join the dataframes: `school_names` and `school_coordinates`. 
+
+**Solution:** 
+
+```{r merge}
+#| echo: true
+#| eval: false
+
+schools_df <- school_names %>%
+  left_join(school_coordinates,by = "osm_id") 
+
+```
+
+
+## Merging data sets
+**Exercise 4:** Check if there is any schools with no gis information:
+
+* Only use pipes %>%
+* And `filter()`
+* Do not assign it to an object.
+
+**Solution:**
+```{r geometry}
+#| echo: true
+#| eval: false
+
+schools_df %>% 
+  filter(is.na(latitude))
+```
+
+## So we ended up with no NAs for the school coordinates
+
+This is because all schools have their respective GIS details stored in the `school_coordinates` dataset.
+
+# Mapping and iterations {background-color="#07202E"}
+
+## Iterations in R
+* In R, the syntax of `for` loops is this:
+
+```{r, for_loops}
+#| echo: true
+#| eval: false
+
+for (number in 1:3) {
+  print(number)
+}
+```
+
+* R, however, has a set of functions that allows users to loop through an object __in a more efficient way__, without using explicit loops
+
+* One can use apply family (`apply()`, `sapply()`, `lapply()`, etc.) of functions or use the family of `map()` functions from the `purrr` package
+
+* __R is vectorized!__ this means that many operations are applied element-wise by default so you don't have to code loops to apply them to each element of a vector or dataframe
+
+## Apply functions
+
+* The choice of the apply function to use will depend on the type of input and output 
+
+* For this session, we will focus on `lapply()` function which applies functions to objects and returns a __list__ of the same length
+
+**`lapply(x, fun)`:** applies `function` to each of the elements of `x`. If `x` is a data frame then `function` is applied column-wise while if it's a vector or a list it is applied item-wise.
+
++ **x:** determines the input vector or an object
++ **fun:** determines the function that is to be applied to input data
+
+## lapply function
+Assuming, we would like to round off values to the nearest whole numbers using `lapply` function, it would be as follows:
+
+```{r, apply_func}
+#| echo: true
+#| eval: true
+
+# Create a list of numbers
+numbers <- list(2.3, 4.7, 5.6, 7.1)
+
+# Using lapply
+rounded_numbers <- lapply(numbers, round)
+
+## Checking the class of object class_list
+class(rounded_numbers)
+
+rounded_numbers
+
+
+```
+
+## map functions
+
+* `lapply` always returns a list.
+
+* However, there are instances where we return a different object (eg, a row of a `dataframe`) and want to append these objects (eg, a `dataframe`)
+
+* The `purrr` package provides a family of `map` functions
+
+* `map_df` returns a dataframe
+
+## map_df example
+
+Example function
+```{r}
+#| echo: true
+#| eval: true
+
+## Example Function
+make_df <- function(i){
+  data.frame(number = i)
+}
+
+make_df(3)
+```
+
+## map_df example
+
+Using `lapply`
+
+```{r}
+#| echo: true
+#| eval: true
+
+lapply(1:4, make_df)
+
+lapply(1:4, make_df) %>% 
+  bind_rows()
+```
+
+## map_df example
+
+Using `map_df`
+
+```{r}
+#| echo: true
+#| eval: true
+
+map_df(1:4, make_df)
+```
+
+# Quick introduction to visualization {background-color="#07202E"}
+
+## Quick introduction to visualization
+
+* The workhorse package for visualization in R is ``ggplot2``, based on [The Grammar of Graphics](https://www.amazon.com/Grammar-Graphics-Statistics-Computing/dp/0387245448/ref=as_li_ss_tl)
+* ``ggplot2`` is designed to support producing many types of figures and is very customizable.
+
+The basic ggplot structure is
+
+```{r}
+#| echo: true
+#| eval: false
+
+ggplot(data = DATA) +
+  GEOM_FUNCTION(aes(AESTHETIC MAPPINGS))
+```
+
+Where we map data to aesthetics - such as x and y variables (scatterplots), colors, sizes, etc.
+
+## Quick introduction to visualization
+
+Plot school coordinates
+
+```{r}
+#| echo: true
+#| eval: true
+
+library(ggplot2)
+
+ggplot() +
+  geom_point(data = school_coordinates,
+             aes(x = longitude,
+                 y = latitude))
+```
+
+## Quick introduction to visualization
+
+Make figure look cleaner 
+
+```{r}
+#| echo: true
+#| eval: true
+
+library(ggplot2)
+
+ggplot() +
+  geom_point(data = school_coordinates,
+             aes(x = longitude,
+                 y = latitude)) +
+  theme_void()
+```
+
+## Quick introduction to visualization
+
+Color points by latitude
+
+```{r}
+#| echo: true
+#| eval: true
+
+ggplot() +
+  geom_point(data = school_coordinates,
+             aes(x = longitude,
+                 y = latitude,
+                 color = latitude)) +
+  theme_void()
+```
+
+## Quick introduction to visualization
+
+Add title
+
+```{r}
+#| echo: true
+#| eval: true
+
+ggplot() +
+  geom_point(data = school_coordinates,
+             aes(x = longitude,
+                 y = latitude,
+                 color = latitude)) +
+  theme_void() +
+  labs(title = "School Coordinates") 
+```
+
+# Saving a dataset {background-color="#07202E"}
+
+## Saving a dataset
+
+* The dataset you have is the same data set we’ve been using for earlier sessions, so we can save it now.
+* To save a dataset we can use the `write_csv` function from the `readr` package, or `write.csv` from base R. 
+
+The function takes the following syntax: 
+
+`write_csv(x, file, append = FALSE)`: 
+
+* `x:` the object (usually a data frame) you want to export to CSV
+* `file:` the file path to where you want to save it, including the file name and the format (“.csv”)
+
+## Saving a dataset
+
+
+**Exercise 5:** 
+Load the library `readr` and save the schools_df dataset as csv format.
+
+* Use `write_csv()`
+
+```{r write_csv2}
+#| echo: true
+#| eval: false
+
+library(readr)
+
+write_csv(
+  schools_df, file.path(data_dir, "schools_final.csv")
+)
+```
+
+## Saving a dataset
+
+* The problem with CSVs is that they cannot differentiate between `strings` and `factors`
+* They also don’t save factor orders
+* Data attributes (which are beyond the scope of this training, but also useful to document data sets) are also lost.
+
+## Saving a dataset
+Data can be saved and loaded in an `.rds` format using the following commands:
+
+* `write_rds(object, file = "")` from `readr` package: Writes a single R object to a file.
+
+* `read_rds(file)` from `readr` package: Load a single R object from a file. 
+
+## Save the data set
+
+```{r write_rds}
+#| echo: true
+#| eval: false
+#| 
+write_rds(schools_df, 
+          file.path(data_dir, "schools_final.Rds"))
+
+```
+
+# Thank you! {background-color="#07202E"}
+
+# Appendix {background-color="#07202E"}
+
+## Appendix - R and RStudio Installation
+
+This training requires that you have R and RStudio installed in your computer:
+
+### Instructions
+
+* To install R, visit (<https://cran.r-project.org>) and select a Comprehensive R Archive Network (CRAN) mirror close to you.
+
+* To install RStudio, go to <https://www.rstudio.com/>. Note that you need to install R first.
+
+## Appendix - More on R
+
+Here are some advantages of R:
+
+* R is a free and open source software!
+
+* It allows you to have several datasets open simultaneously.
+
+* It can run complex Geographic Information System (GIS) analyses.
+
+* You can use it for web scrapping.
+
+* You can run machine learning algorithms with it.
+
+* You can create complex Markdown documents. This presentation, for example, is entirely done in R.
+
+* You can create interactive dashboards and online applications with the Shiny package.
+
+## Appendix - Syntax
+
+Some of the highlights on R's syntax include:
+
+* Parentheses to separate function names from its arguments.
+* Commas to separate arguments.
+* For comments we use the `#` sign.
+* You can have line breaks inside function statements.
+* In R, functions can be treated much like any other object. Therefore, they can be passed as arguments to other functions.
+
+
+## Appendix - RStudio interface
+
+### Script
+Where you write your code.
+
+### Console
+Where your results and messages will be displayed. But you can also type commands directly into the console.
+
+### Environment
+What's in R's memory.
+
+### The 4th pane
+Can display different things, including plots you create, packages loaded and help files.
+
+
+## Appendix - RStudio vs R GUI
+
+### RStudio
+
+- RStudio is an integrated development environment for R
+
+- It's a software that uses the base R installation of your computer and provides an expanded interface that greatly facilitates R programming
+
+### R GUI
+
+- The basic R Graphic User Interface (GUI) can also be used to program in R. You will find it in your computer with a name similar to `R<version>`, as in `R4.2.2`
+
+- Opening the R GUI allows to work with R in a command line format, where you introduce one R command and the interface executes it and prints any message if needed
+
+- It's very similar to the console panel of RStudio and it also allows to open a script editor, but it will not show you a list of the variables loaded on your environment
+
+
+## Appendix - RStudio vs R GUI
+
+![](img/r-gui.png)
+
+## Appendix - Help, Google and Stack Overflow
+
+R help files usually start with a brief description of the function, explain its syntax and arguments and list a few examples. There are two ways to access help files:
+
+**Exercise 6:** Use help to get more information on the `summary` function
+
+```{r, help1}
+#| echo: true
+#| eval: false
+#| 
+# You can use the help() function
+help(summary)
+
+# or its abbreviation
+?summary
+
+```
+
+
+## Appendix - Help, Google and Stack Overflow
+
+* Some of the best things about R, is that __R has a wide user community__ and it has __a lot of online resources__.
+
+* The most powerful problem-solving tool in R, however, is Google. Searching the something yields tons of results.
+
+* Often that means a Stack Overflow page where someone asked the same question and several people gave different answers. Here's a typical example:
+<https://stackoverflow.com/questions/1660124/how-to-sum-a-variable-by-group>
+
+
+## Appendix - Useful resources
+
+### Blogs, courses and resources:
+
+* Surviving graduate econometrics with R:
+<https://thetarzan.wordpress.com/2011/05/24/surviving-graduate-econometrics-with-r-the-basics-1-of-8/>
+
+* CRAN's manuals:
+<https://cran.r-project.org/manuals.html>
+
+* R programming in Coursera:
+<https://www.coursera.org/learn/r-programming>
+
+* R programming for dummies:
+<http://www.dummies.com/programming/r/>
+
+* R bloggers:
+<https://www.r-bloggers.com/>
+
+* R statistics blog:
+<https://www.r-statistics.com/>
+
+* The R graph gallery:
+<https://www.r-graph-gallery.com/>
+
+* R Econ visual library: (developed and maintained by DIME Analytics!)
+<https://worldbank.github.io/r-econ-visual-library/>
+
+
+## Appendix - Useful resources
+
+### Books:
+
+* R for Stata Users - Robert A. Muenchen and Joseph Hilbe
+
+* R Graphics Cookbook - Winston Chang
+<https://r-graphics.org/>
+
+* R for Data Science - Hadley Wickham and Garrett Grolemund
+<https://r4ds.had.co.nz/>
+
+
+

@@ -1,0 +1,575 @@
+---
+title: "GIS for Transport - R"
+subtitle: "Routing & Accessibility"
+author: "Christine Okeyo, Rob Marty, & Luis Eduardo"
+institute: Development Impact (DIME)
+date: "April 2024"
+date-format: "MMMM, YYYY"
+bibliography: bib/template.bib
+format:
+  dime-revealjs:
+    # Output file
+    output-file: 04_accessibility_R.html
+    # Table of Contents
+    toc: true
+    toc_float: true
+    toc-depth: 1
+    toc-location: body
+    toc-title: "Contents"
+    # Generate a self contained file
+    self-contained: true
+    self-contained-math: true
+    # Turn preview links within the presentation off (all links open in a new tab)
+    preview-links: false
+    # Logo and footer options
+    logo: "logos/DIME_COLOR.png"
+    footer: ""
+---
+
+```{r Setup}
+#| include: false
+# Add default ggplot theme. This can be overridden by your own theme at
+# the end of the ggplot graph.
+
+# DIME:
+source("_extensions/dime-worldbank/dime/setup_dime_palettes.R")
+source("_extensions/dime-worldbank/dime/setup_ggplot2_dime.R")
+# Worldbank:
+# source("_extensions/dime/setup_dime_palettes.R")
+# source("_extensions/dime/setup_ggplot2_dime.R")
+```
+
+```{r, packages}
+#| echo: false
+#| eval: true
+library(tidyverse)
+library(sf)
+
+```
+
+# Introduction
+
+## Accessibility
+
+This section will introduce calculating accessibility metrics in R. Specifically, we'll work to understand questions such as:
+
+* What is the travel time between specific origin and destination points?
+* Which locations are within 30 minutes of a health facility?
+* How can we measure changes in accessibility?
+
+## Data sources
+
+* [OpenStreetMap](https://www.openstreetmap.org/): Public available information on road networks, buildings, etc. In short, a Wikipedia for maps.
+* [Google Maps](https://developers.google.com/maps/documentation/distance-matrix/overview) and [Mapbox](https://www.mapbox.com/matrix-api) provide APIs for querying travel time between origin and destinations and by travel time (driving, walking, public transit); incorporates live traffic information.
+* Other private sector companies like [TomTom](https://www.tomtom.com/) and [INRIX](https://inrix.com/) provide more granular information (eg, distribution of speeds across road segments, both in real time and histroic); however, data sources can be more expensive to access.
+
+Today, we'll focus approaches using OpenStreetMaps. We'll primarily rely on Open Source Routing Machine (OSRM) for determining accessibility, which is a routing engine that uses OpenStreetMap data.
+
+# Setup
+
+## Setup
+
+Copy/paste the following code into a new RStudio script, __replacing "YOURFOLDERPATHHERE" with the folder within which you'll place this R project__:
+```{r}
+#| echo: true
+#| eval: false
+
+library(usethis)
+
+use_course(
+  url = "https://github.com/dime-worldbank/gis-transport-training/archive/main.zip",
+  destdir = "YOURFOLDERPATHHERE"
+)
+```
+
+## Setup
+
+Install new packages
+
+```{r, eval = F}
+#| echo: true
+#| eval: false
+
+install.packages(c("sf",
+                   "leaflet",
+                   "geosphere"),
+                 dependencies = TRUE)
+```
+
+And load them
+```{r}
+#| eval: true
+#| echo: true
+#| message: false
+#| warning: false
+
+library(here)
+library(tidyverse)
+library(units)     # Define units
+library(sf)        # Simple features
+library(leaflet)   # Interactive map
+library(osmdata)   # Query OSM data
+library(osrm)      # Routing using OpenStreetMaps
+```
+
+# Travel time between 1 origin and 1 destination
+
+## Example travel time between two schools
+
+Load school data and convert to spatial object
+
+```{r}
+#| echo: true
+schools_df <- read.csv(here("DataWork", 
+                            "DataSets", 
+                            "Final",
+                            "schools.csv"))
+
+schools_sf <- st_as_sf(schools_df,
+                       coords = c("longitude", "latitude"),
+                       crs = 4326)
+```
+
+## Example travel time between two schools
+
+Map two schools
+```{r}
+#| echo: true
+
+leaflet() %>%
+  addTiles() %>%
+  addCircles(data = schools_sf[1:2,], opacity = 1, weight = 10)
+```
+
+## Example travel time between two schools
+
+Determine driving time between schools (measured in minutes)
+
+```{r}
+#| echo: true
+tt_drive <- osrmTable(src = schools_sf[1,],
+                      dst = schools_sf[2,])
+
+tt_walk <- osrmTable(src = schools_sf[1,],
+                     dst = schools_sf[2,],
+                     osrm.profile = "foot")
+
+print(tt_drive$durations)
+print(tt_walk$durations)
+```
+
+## Example travel time between two schools
+
+Determine optimal route
+
+```{r, width = 10, height = 10}
+#| echo: true
+drive_sf <- osrmRoute(src = schools_sf[1,],
+                      dst = schools_sf[2,])
+
+walk_sf <- osrmRoute(src = schools_sf[1,],
+                     dst = schools_sf[2,],
+                     osrm.profile = "foot")
+
+leaflet() %>%
+  addTiles() %>%
+  addPolylines(data = drive_sf, opacity = 1, weight = 10) %>%
+  addPolylines(data = walk_sf, color = "orange", opacity = 1)
+```
+
+## Example travel time between two schools
+
+__Exercise:__ 
+
+1. Determine the driving and walking travel time between two different schools
+2. Determine geometry of the shortest driving and walking routes
+3. Add the travel time as a variable on the geometry objects
+4. Map the shortest path geometries
+
+## Example travel time between two schools
+
+__Solution:__ 
+
+1. Determine geometry of the shortest driving and walking routes
+2. Determine the driving and walking travel time between two different schools and add the travel time as a variable on the geometry objects
+
+```{r}
+#| echo: true
+## School ids
+id_1 <- 10
+id_2 <- 20
+
+## Route geometries
+drive_sf <- osrmRoute(src = schools_sf[id_1,],
+                      dst = schools_sf[id_2,])
+
+walk_sf <- osrmRoute(src = schools_sf[id_1,],
+                     dst = schools_sf[id_2,],
+                     osrm.profile = "foot")
+
+## Add travel time as a variable
+drive_sf$travel_time <- osrmTable(src = schools_sf[id_1,],
+                                  dst = schools_sf[id_2,])$durations
+
+walk_sf$travel_time <- osrmTable(src = schools_sf[id_1,],
+                                 dst = schools_sf[id_2,],
+                                 osrm.profile = "foot")$durations
+
+print(c(drive_sf$travel_time, walk_sf$travel_time))
+```
+
+## Example travel time between two schools
+
+__Solution:__ 
+
+3. Map the shortest path geometries
+
+```{r}
+#| echo: true
+
+## Map
+leaflet() %>%
+  addTiles() %>%
+  addPolylines(data = drive_sf, opacity = 1, weight = 10,
+               popup = ~paste0("Travel time: ", travel_time, " minutes")) %>%
+  addPolylines(data = walk_sf, color = "orange", opacity = 1,
+               popup = ~paste0("Travel time: ", travel_time, " minutes"))
+```
+
+# Travel time between multiple origins and destinations
+
+## Travel time between multiple origins and destinations
+
+Compute travel time from the first school to the next 99 schools
+
+```{r}
+#| echo: true
+tt_drive <- osrmTable(src = schools_sf[1,],
+                      dst = schools_sf[2:99,])
+
+hist(tt_drive$durations)
+```
+
+## Travel time between multiple origins and destinations
+
+Compute optimal routes:
+
+1. `osrmRoute` only allows 1 O-D pair, so we apply over destinations
+2. `osrmRoute` is slow, so we just look at 10 O-D pairs
+
+```{r}
+#| echo: true
+drive_sf <- map_df(2:11, function(i){
+  osrmRoute(src = schools_sf[1,],
+            dst = schools_sf[i,])
+})
+```
+
+## Travel time between multiple origins and destinations
+
+```{r}
+#| echo: true
+leaflet() %>%
+  addTiles() %>%
+  addPolylines(data = drive_sf) %>%
+  addCircles(data = schools_sf[2:11,], color = "red", opacity = 1) %>%
+  addCircles(data = schools_sf[1,], color = "green", weight = 10, opacity = 1)
+```
+
+
+## Travel time between multiple origins and destinations
+
+__Exercise:__ A student lives near school 1, but has options to go to all other schools. The student will have to walk to school and doesn't want to cross a major road (trunk or motorway) to get to the school. How many schools can the student consider? 
+
+(To minimize computational time, only consider the first 20 schools).
+
+__Hint:__ Load the road files and subset to major roads. Which routes don't intersect with a major road?
+```{r}
+#| echo: true
+roads_sf <- read_sf(here("DataWork", 
+                        "DataSets", 
+                        "Final",
+                        "roads.geojson"))
+
+roads_sf <- roads_sf %>%
+  filter(highway %in% c("trunk", "motorway"))
+
+# Make one row
+roads_sf <- roads_sf %>% st_union()
+```
+
+## Travel time between multiple origins and destinations
+
+__Solution:__
+
+```{r}
+#| echo: true
+walk_sf <- map_df(2:20, function(i){
+  osrmRoute(src = schools_sf[1,],
+            dst = schools_sf[i,],
+            osrm.profile = "foot")
+})
+
+walk_sf$inter_mjr_road <- st_intersects(walk_sf, roads_sf, sparse = F)
+
+table(walk_sf$inter_mjr_road)
+```
+
+# Isochrones: reachable locations within set travel times
+
+## Isocrhones
+
+```{r}
+#| echo: true
+iso_sf <- osrmIsochrone(
+  loc = schools_sf[1,],
+  breaks = seq(from = 0, to = 20, length.out = 5)
+)
+
+head(iso_sf)
+```
+
+## Isocrhones
+
+```{r}
+#| echo: true
+leaflet() %>%
+  addTiles() %>%
+  addCircles(data = schools_sf[1,], color = "red") %>%
+  addPolygons(data = iso_sf)
+```
+
+## Isocrhones
+
+__Exercise:__ 
+
+1. Make an Isochrone from the centroid of the city. Maximum distance should be 40 minutes
+2. Map the Isochrone and schools
+3. __Challenge__ What proportion of schools are within 10 minutes of the center of the city? (__Hint:__ Use `st_join` to perform a spatial join).
+
+```{r}
+#| echo: true
+city_sf <- read_sf(here("DataWork", 
+                        "DataSets", 
+                        "Final",
+                        "city.geojson"))
+head(city_sf)
+center_sf <- city_sf %>% st_union() %>% st_centroid()
+```
+
+## Isocrhones
+
+__Solution:__ 
+
+```{r}
+#| echo: true
+## Make IsoChrone
+iso_sf <- osrmIsochrone(
+  loc = center_sf,
+  breaks = c(0, 10, 20, 30, 40)
+)
+
+## Map
+leaflet() %>%
+  addTiles() %>%
+  addPolygons(data = iso_sf) %>%
+  addCircles(data = schools_sf, color = "red")
+```
+
+## Isocrhones
+
+__Solution:__ 
+
+```{r}
+#| echo: true
+## Spatial join
+schools_iso_sf <- schools_sf %>%
+  st_join(iso_sf)
+
+## Proportion within 10 minutes
+mean(schools_iso_sf$isomax <= 10, na.rm = T)
+```
+
+## Isocrhones
+
+Instead of using Isochrones, we could also also determine the percent of schools within 10 minutes using `osrmTable`. One disadvatange of this approach is that the code can take longer to run; a separate query to OSRM is made for each school.
+
+```{r}
+#| echo: true
+#| eval: false
+
+osrmTable(src = center_sf,
+          dst = schools_sf)
+```
+
+## Isodistance
+
+Isochrones show polygons that are reachable within a certain time. We can also compute an Isodistance, which shows polygons that are reachable within a certain driving distance.
+
+```{r}
+#| echo: true
+iso_sf <- osrmIsodistance(
+  loc = schools_sf[1,],
+  breaks = c(2000, 4000, 6000, 8000, 10000) # meters
+)
+
+palette_1 <- colorNumeric(
+  palette = "viridis", domain = iso_sf$isomin
+)
+
+leaflet() %>%
+  addTiles() %>%
+  addCircles(data = schools_sf[1,], color = "red", opacity = 1) %>%
+  addPolygons(data = iso_sf,
+              fillColor = ~palette_1(isomin),
+              fillOpacity = 0.7,
+              stroke = F)
+```
+
+## Isocrhones
+
+The `osrmIsochrone` function only allows determining accessibility from one distance. In many cases were are interested in understanding accessibility to the closest location among many locations; for example, travel time to the nearest school. 
+
+__Strategy:__
+
+1. Make grid across city
+2. Compute fastest travel time for each grid to each school
+3. Make map of travel times across grids
+
+## Isocrhones
+
+1. Make grid across city
+
+```{r}
+#| echo: true
+hex_sf <- st_make_grid(
+  x = city_sf,
+  cellsize = 0.03, # decimal degrees, approximately 5km
+  square = F # when F, makes hexagonal grid
+) %>%
+  st_as_sf()
+
+hex_sf <- st_intersection(hex_sf, 
+                          city_sf %>% st_union())
+
+leaflet() %>%
+  addTiles() %>%
+  addPolygons(data = hex_sf)
+```
+
+## Isocrhones
+
+2. Compute fastest travel time for each grid to each school. To minimize computation time, we pick 5 random schools.
+
+```{r}
+#| echo: true
+schools_lim_sf <- schools_sf %>%
+  arrange(runif(n())) %>%
+  head(5)
+
+hex_sf$tt_nearest_school <- lapply(1:nrow(hex_sf), function(i){
+
+  hex_sf_i <- hex_sf[i,] %>% st_centroid()
+  
+  min_tt <- osrmTable(src = hex_sf_i, 
+                      dst = schools_lim_sf)$durations %>%
+    min()
+  
+  return(min_tt)
+}) %>%
+  unlist()
+```
+
+## Isocrhones
+
+3. Make map of travel times across grids
+
+```{r}
+#| echo: true
+palette_1 <- colorNumeric(
+  palette = "viridis", domain = hex_sf$tt_nearest_school
+)
+
+leaflet() %>%
+  addTiles() %>%
+  addPolygons(data = hex_sf,
+              fillColor = ~palette_1(tt_nearest_school),
+              fillOpacity = 0.7,
+              stroke = F) %>%
+    addCircles(data = schools_lim_sf, color = "red", opacity = 1) 
+```
+
+# Routing considering live traffic
+
+The `osrm` package enables routing across a road network but does not consider live traffic conditions. We can leverage private sector data sources/APIs to query travel time between origin and destinations that incorporate traffic conditions. 
+
+## Routing considering live traffic
+
+__Google:__ 
+
+* The [Distance Matrix API](https://developers.google.com/maps/documentation/distance-matrix/overview) allows querying travel times considering: (1) live traffic conditions, (2) typical traffic conditions for a date/time (e.g., typical travel time on a Monday at 3pm), and (3) different travel modes (driving, walking, biking, transit).
+* The [`gmapsdistance`](https://cran.r-project.org/web/packages/gmapsdistance/readme/README.html) package facilitates using the API. The `gmapsdistance` function works similarly to the `osrmTable` function:
+
+```{r}
+#| eval: false
+#| echo: true
+library(gmapsdistance)
+results <- gmapsdistance(origin = c(lat, lon), 
+                        destination = c(lat, lon), 
+                        mode = "driving",
+                        key = "GOOGLE-API-KEY") 
+```
+
+## Routing considering live traffic
+
+__Mapbox:__ 
+
+* The [Mapbox Directions API](https://docs.mapbox.com/api/navigation/directions/) works similarly to Google's Distance Matrix API. It allows querying travel times considering (1) live traffic conditions, (2) typical traffic conditions for a date/time, and (3) different travel modes (driving, walking, biking).
+* The [`mapboxapi`](https://github.com/walkerke/mapboxapi) package facilitates using the API. The `mb_matrix` function works similarly to `osrmTable` function:
+
+```{r}
+#| eval: false
+#| echo: true
+library(mapboxapi)
+results <- mb_matrix(origins = point1_sf, 
+                        destinations = point2_sf, 
+                        profile = "driving-traffic",
+                        access_token = "MAPBOX-API-KEY") 
+```
+
+# Routing considering alternate scenerios
+
+We may also be interested in routing based on scenarios that we define. For example, by changing the speed limit of a road, removing a road, adding a road, etc. This task can be more complicated and there are multiple approaches:
+
+## Routing considering alternate scenerios
+
+__Routing using a graph__
+
+1. Obtaining a road network file (e.g., shapefile of roads)
+2. Manipulating the network (eg, changing speeds, removing a road)
+3. Converting the road network to a graph (eg, with nodes and weighted edges) and routing along the graph. 
+
+Resources for this approach: 
+
+* [tidygraph](https://r-spatial.org/r/2019/09/26/spatial-networks.html): R package
+* [GOSTnets](https://github.com/worldbank/GOSTnets): Python package (developed by World Bank)
+
+## Routing considering alternate scenerios
+
+__Routing using a gridded approach__
+
+One disadvantage with the above approach is that converting the road network spatial file into a graph can be cumbersome. Another approach that can be more straightforward but assumes some simplifcation of the road network:
+
+1. Obtaining a road network file (e.g., shapefile of roads)
+2. Manipulating the network (eg, changing speeds, removing a road)
+3. Create a grid across the network (e.g., 100 meter grids). 
+4. For each grid cell, determine the time it takes to cross the grid using the speed limit of the fastest road that intersects with the grid.
+5. For grid cells that don't interesect with a road, assuming some walking speed
+6. Use the grid for routing between grid cells
+
+Resources for this approach: 
+
+* [gdistance](https://github.com/AgrDataSci/gdistance): R package
+
+## Thank you {background-color="#07202E"}
+
