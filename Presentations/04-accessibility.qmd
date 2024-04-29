@@ -77,7 +77,7 @@ Copy/paste the following code into a new RStudio script, __replacing "YOURFOLDER
 library(usethis)
 
 use_course(
-  url = "https://github.com/dime-worldbank/gis-transport-training/archive/main.zip",
+  url = "https://github.com/dime-worldbank/dime-transport-training/archive/main.zip",
   destdir = "YOURFOLDERPATHHERE"
 )
 ```

@@ -254,7 +254,7 @@ Whenever have spatial data, need to know which coordinate reference system (CRS)
 ```{r, eval = FALSE}
 library(usethis)
 use_course(
-  url = "https://github.com/worldbank/gis-transport-training/archive/main.zip",
+  url = "https://github.com/worldbank/dime-transport-training/archive/main.zip",
   destdir = "YOURFOLDERPATHHERE"
 )
 ```

@@ -67,7 +67,7 @@ htmltools::tagList(
 ```{r, eval = FALSE}
 library(usethis)
 use_course(
-  url = "https://github.com/worldbank/dime-r-training/archive/main.zip",
+  url = "https://github.com/worldbank/dime-transport-training/archive/main.zip",
   destdir = "YOURFOLDERPATHHERE"
 )
 ```
