@@ -7,7 +7,7 @@
     <script src="libs/header-attrs/header-attrs.js"></script>
     <link href="libs/panelset/panelset.css" rel="stylesheet" />
     <script src="libs/panelset/panelset.js"></script>
-    <script type="application/json" id="xaringanExtra-editable-docid">{"id":"x420d59320054847901d1a28db8cb3b0","expires":14}</script>
+    <script type="application/json" id="xaringanExtra-editable-docid">{"id":"x4ad498e547e45a1b0ad87af509c92ed","expires":14}</script>
     <script src="libs/himalaya/himalaya.js"></script>
     <script src="libs/js-cookie/js.cookie.js"></script>
     <link href="libs/editable/editable.css" rel="stylesheet" />
@@ -17,8 +17,8 @@
     <script src="libs/xaringanExtra-clipboard/xaringanExtra-clipboard.js"></script>
     <script>window.xaringanExtraClipboard(null, {"button":"Copy Code","success":"Copied!","error":"Press Ctrl+C to Copy"})</script>
     <script>window.xaringanExtraClipboard(null, {"button":"<i class=\"fa fa-clipboard\"><\/i>","success":"<i class=\"fa fa-check\" style=\"color: #90BE6D\"><\/i>","error":"<i class=\"fa fa-times-circle\" style=\"color: #F94144\"><\/i>"})</script>
-    <link href="libs/font-awesome/css/all.css" rel="stylesheet" />
-    <link href="libs/font-awesome/css/v4-shims.css" rel="stylesheet" />
+    <link href="libs/font-awesome/css/all.min.css" rel="stylesheet" />
+    <link href="libs/font-awesome/css/v4-shims.min.css" rel="stylesheet" />
     <link href="libs/countdown/countdown.css" rel="stylesheet" />
     <script src="libs/countdown/countdown.js"></script>
     <script src="libs/htmlwidgets/htmlwidgets.js"></script>
@@ -260,7 +260,7 @@ Whenever have spatial data, need to know which coordinate reference system (CRS)
 ```r
 library(usethis)
 use_course(
-  url = "https://github.com/worldbank/dime-r-training/archive/main.zip",
+  url = "https://github.com/dime-worldbank/dime-transport-training/archive/main.zip",
   destdir = "YOURFOLDERPATHHERE"
 )
 ```
@@ -278,7 +278,9 @@ Install new packages
 ```r
 install.packages(c("sf",
                    "leaflet",
-                   "geosphere"),
+                   "geosphere",
+                   "ggplot2",
+                   "basemaps"),
                  dependencies = TRUE)
 ```
 
@@ -291,6 +293,8 @@ library(tidyverse)
 library(sf)        # Simple features
 library(leaflet)   # Interactive map
 library(geosphere) # Great circle distances
+library(ggplot2)   # Static maps
+library(basemaps)  # Basemaps on static maps
 ```
 
 
@@ -613,7 +617,7 @@ ggplot() +
 
 ]
 
-<div class="countdown" id="timer_279bfae4" data-update-every="1" tabindex="0" style="bottom:0;left:0;font-size:2em;">
+<div class="countdown" id="timer_a87af2a5" data-update-every="1" tabindex="0" style="bottom:0;left:0;font-size:2em;">
 <div class="countdown-controls"><button class="countdown-bump-down">&minus;</button><button class="countdown-bump-up">&plus;</button></div>
 <code class="countdown-time"><span class="countdown-digits minutes">01</span><span class="countdown-digits colon">:</span><span class="countdown-digits seconds">00</span></code>
 </div>
@@ -1452,7 +1456,7 @@ ggplot() +
 
 ]
 
-<div class="countdown" id="timer_470a5073" data-update-every="1" tabindex="0" style="bottom:0;left:0;font-size:2em;">
+<div class="countdown" id="timer_2a39202a" data-update-every="1" tabindex="0" style="bottom:0;left:0;font-size:2em;">
 <div class="countdown-controls"><button class="countdown-bump-down">&minus;</button><button class="countdown-bump-up">&plus;</button></div>
 <code class="countdown-time"><span class="countdown-digits minutes">00</span><span class="countdown-digits colon">:</span><span class="countdown-digits seconds">30</span></code>
 </div>
@@ -1483,6 +1487,7 @@ city_sf &lt;- city_sf %&gt;%
 ```
 
 ---
+
 # Make better static map
 
 Create a static map showing differences in squared kilometre differences for the areas within __Nairobi__
@@ -1520,6 +1525,57 @@ ggplot() +
 ```
 
 &lt;img src="02-spatial-data-into_files/figure-html/unnamed-chunk-26-1.png" width="35%" style="display: block; margin: auto;" /&gt;
+
+---
+
+# Add a basemap
+
+Lets add a basemap; we'll use the "basemap_gglayer" from the "basemaps" package
+
+
+```r
+basemap_ggplot(city_sf)
+```
+
+```
+## Warning: Transforming 'ext' to Web Mercator (EPSG: 3857), since 'ext' has a
+## different CRS. The CRS of the returned basemap will be Web Mercator, which is
+## the default CRS used by the supported tile services.
+```
+
+```
+## Loading basemap 'voyager' from map service 'carto'...
+## Using geom_raster() with maxpixels = 266015.
+```
+
+&lt;img src="02-spatial-data-into_files/figure-html/unnamed-chunk-27-1.png" width="35%" style="display: block; margin: auto;" /&gt;
+
+---
+
+# Add a basemap
+
+`basemap_gglayer` uses the Web Mercator CRS (EPSG: 3857); we need to transform our other datasets to that CRS.
+
+
+```r
+schools_sf_web &lt;- schools_sf %&gt;% st_transform(3857)
+
+basemap_ggplot(city_sf) +
+  geom_sf(data = schools_sf_web,
+          aes(color = "Schools")) +
+  labs(fill = "Area",
+       color = NULL) +
+  scale_color_manual(values = "black") +
+  theme_void()
+```
+
+```
+## Loading basemap 'voyager' from map service 'carto'...
+## Using geom_raster() with maxpixels = 266015.
+```
+
+&lt;img src="02-spatial-data-into_files/figure-html/unnamed-chunk-28-1.png" width="35%" style="display: block; margin: auto;" /&gt;
+
 
 ---
 
@@ -1607,7 +1663,7 @@ leaflet() %&gt;%
 
 ]
 
-<div class="countdown" id="timer_fae668a3" data-update-every="1" tabindex="0" style="bottom:0;left:0;font-size:2em;">
+<div class="countdown" id="timer_8a7ea4c1" data-update-every="1" tabindex="0" style="bottom:0;left:0;font-size:2em;">
 <div class="countdown-controls"><button class="countdown-bump-down">&minus;</button><button class="countdown-bump-up">&plus;</button></div>
 <code class="countdown-time"><span class="countdown-digits minutes">02</span><span class="countdown-digits colon">:</span><span class="countdown-digits seconds">00</span></code>
 </div>

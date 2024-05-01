@@ -293,9 +293,6 @@ roads_sf <- read_sf(here("DataWork",
 
 roads_sf <- roads_sf %>%
   filter(highway %in% c("trunk", "motorway"))
-
-# Make one row
-roads_sf <- roads_sf %>% st_union()
 ```
 
 ## Travel time between multiple origins and destinations
@@ -310,7 +307,8 @@ walk_sf <- map_df(2:20, function(i){
             osrm.profile = "foot")
 })
 
-walk_sf$inter_mjr_road <- st_intersects(walk_sf, roads_sf, sparse = F)
+walk_sf$inter_mjr_road <- st_intersects(walk_sf, roads_sf, sparse = F) %>%
+  apply(1, max)
 
 table(walk_sf$inter_mjr_road)
 ```

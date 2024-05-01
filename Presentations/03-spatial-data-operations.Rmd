@@ -156,7 +156,6 @@ schools_sf <- st_as_sf(schools_df,
 * `st_transform`: Transform CRS
 * `st_buffer`: Buffer point/line/polygon
 * `st_combine`: Dissolve by attribute
-* `st_convex_hull `: Create convex hull
 * `st_centroid`: Create new sf object that uses the centroid
 * `st_drop_geometry`: Drop geometry; convert from sf to dataframe
 * `st_coordinates`: Get matrix of coordinates
@@ -212,7 +211,7 @@ ggplot() +
 
 .exercise[
 
-**Exercise:** Create a polyline of all trunk roads, and buffer the poyline by 10 meters. In `roads_sf`, the `highway` variable notes road types.
+**Exercise:** Filter the dataset to just trunk roads, and buffer the polyline by 10 meters. In `roads_sf`, the `highway` variable notes road types.
 
 ]
 
@@ -226,64 +225,10 @@ ggplot() +
 ```{r}
 roads_sf %>%
   filter(highway == "trunk") %>%
-  summarise(geometry = st_combine(geometry)) %>%
   st_buffer(dist = 10)
 ```
 
 ]
-
----
-
-# Convex Hull
-
-__Simple definition:__ Get the outer-most coordinates of a shape and connect-the-dots.
-
-__Formal definition:__ A convex hull of a shape the smallest "convex set" that contains it. (A [convex set](https://en.wikipedia.org/wiki/Convex_set) is where a straight line can be drawn anywhere in the space and the space fully contains the line).
-
-.pull-left[
-__Convex__
-
-![Convex](img/Convex_polygon_illustration1.svg.png)
-]
-
-.pull-right[
-__Not convex__
-
-![Not Convex](img/220px-Convex_polygon_illustration2.svg.png)
-]
-
-__Source:__ [Wikipedia](https://en.wikipedia.org/wiki/Convex_set)
-
----
-
-# Convex hull
-
-In the below example, we create a conex hull around schools; creating a polygon that includes all schools.
-
-__Incorrect attempt__
-
-```{r}
-schools_chull1_sf <- schools_sf %>%
-  st_convex_hull()
-
-nrow(schools_chull1_sf)
-```
-
----
-
-# Convex hull
-
-__Correct__
-
-```{r, out.width = "40%"}
-schools_chull2_sf <- schools_sf %>%
-  summarise(geometry = st_combine(geometry)) %>%
-  st_convex_hull()
-
-ggplot() +
-  geom_sf(data = schools_chull2_sf) +
-  geom_sf(data = schools_sf, color = "red")
-```
 
 ---
 
@@ -308,18 +253,6 @@ country_c_sf <- st_centroid(country_sf)
 
 ggplot() +
   geom_sf(data = country_c_sf)
-```
-
----
-
-# Remove geometry
-
-__Incorrect approach__
-
-```{r}
-city_sf %>% 
-  select(-geometry) %>%
-  head()
 ```
 
 ---
@@ -363,7 +296,6 @@ schools_sf %>%
 * `st_intersection`: Cut one spatial object based on another.
 * `st_difference`: Remove part of spatial object based on another.  
 * `st_join`: Spatial join (ie, add attributes of one dataframe to another based on location). 
-
 ---
 
 # Distances
@@ -385,50 +317,29 @@ dist_mat %>% apply(1, min) %>% head()
 
 # Distances
 
-There are multiple ways to calculate distances!
+.exercise[
 
-* __Great circle:__ sf, by default, uses s2 to computer distance (in meters) when data has a geographic CRS
-* __Great circle:__ Other formulas beyond s2, such as Haversine, Vincenty, and Karney’s method. See the [geosphere](https://cran.r-project.org/web/packages/geosphere/geosphere.pdf) and [geodist](https://cran.r-project.org/web/packages/geodist/geodist.pdf) packages. Vincenty is more precise than Haversine, and Karney's method is more precise than Vincenty's method. Greater precision comes with heavy computation. For more information, see [here](https://rspatial.org/raster/sphere/2-distance.html).
-* __Projected:__ We can use a projected CRS, where units are in meters already.
-
----
-
-# Distances
-
-.pull-left[
-```{r}
-# s2
-st_distance(schools_sf[1,], schools_sf[2,]) %>% 
-  as.numeric()
-
-# Nigeria-specific CRS
-schools_utm_sf <- st_transform(schools_sf, 32632)
-st_distance(schools_utm_sf[1,], schools_utm_sf[2,]) %>% 
-  as.numeric()
-
-# World mercator
-schools_merc_sf <- st_transform(schools_sf, 3395)
-st_distance(schools_merc_sf[1,], schools_merc_sf[2,]) %>% 
-  as.numeric()
-```
+**Exercise:** What proportion of schools are within 1km of a trunk road?
 
 ]
 
-.pull-right[
+--
+
+.solution[
+**Solution**: 
 ```{r}
-# Haversine
-distHaversine(
-  p1 = schools_sf[1,] %>% st_coordinates,
-  p2 = schools_sf[2,] %>% st_coordinates)
+## Trunk Road
+trunk_sf <- roads_sf %>%
+  filter(highway == "trunk")
 
-# Vincenty's method
-distVincentySphere(
-  p1 = schools_sf[1,] %>% st_coordinates,
-  p2 = schools_sf[2,] %>% st_coordinates)
+# Matrix: distance of each school to each trunk road
+dist_mat <- st_distance(schools_sf, trunk_sf)
 
-# Karney’s method 
-distGeo(p1 = schools_sf[1,] %>% st_coordinates,
-        p2 = schools_sf[2,] %>% st_coordinates)
+# Take minimun distance for each school
+dist_to_trunk <- dist_mat %>% apply(1, min)
+
+# Proportion within 1km
+mean(dist_to_trunk <= 1000)
 ```
 
 ]
@@ -523,6 +434,21 @@ schools_city_sf %>%
   tail(10)
 ```
 
+---
+
+# Spatial join
+
+Now, we create a dataset showing the number of schools within each administrative division.
+
+```{r}
+n_school_df <- schools_city_sf %>%
+  st_drop_geometry() %>%
+  group_by(NAME_2) %>%
+  summarise(n_school = n()) %>%
+  ungroup()
+
+head(n_school_df)
+```
 
 ---
 
@@ -530,7 +456,7 @@ schools_city_sf %>%
 
 .exercise[
 
-**Exercise:** Make a static map using of administrative areas, where each administrative area polygon displays the number of schools.
+**Exercise:** Make a static map using of administrative areas, where each administrative area polygon displays the number of schools. __Hint:__ (1) Use `left_join` to merge `city_sf` and `n_school_df`, (2) Use `ggplot` to make the map.
 
 ]
 
@@ -539,22 +465,17 @@ schools_city_sf %>%
 .solution[
 **Solution**: 
 ```{r}
-## Dataframe of number of schools per NAME_2
-n_school_df <- schools_city_sf %>%
-  st_drop_geometry() %>%
-  group_by(NAME_2) %>%
-  summarise(n_school = n()) %>%
-  ungroup()
-
 ## Merge info with city_sf
 city_sch_sf <- city_sf %>% left_join(n_school_df, by = "NAME_2")
 
 ## Map
 p <- ggplot() +
   geom_sf(data = city_sch_sf,
-          aes(fill = n_school))
+          aes(fill = n_school)) +
+  labs(fill = "N\nSchools") +
+  scale_fill_distiller(palette = "YlOrRd") +
+  theme_void()
 ```
-
 ]
 
 ---

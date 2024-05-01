@@ -271,7 +271,9 @@ Install new packages
 ```{r, eval = F}
 install.packages(c("sf",
                    "leaflet",
-                   "geosphere"),
+                   "geosphere",
+                   "ggplot2",
+                   "basemaps"),
                  dependencies = TRUE)
 ```
 
@@ -283,6 +285,8 @@ library(tidyverse)
 library(sf)        # Simple features
 library(leaflet)   # Interactive map
 library(geosphere) # Great circle distances
+library(ggplot2)   # Static maps
+library(basemaps)  # Basemaps on static maps
 ```
 
 
@@ -574,6 +578,7 @@ city_sf <- city_sf %>%
 ```
 
 ---
+
 # Make better static map
 
 Create a static map showing differences in squared kilometre differences for the areas within __Nairobi__
@@ -605,6 +610,35 @@ ggplot() +
   scale_color_manual(values = "black") +
   theme_void()
 ```
+
+---
+
+# Add a basemap
+
+Lets add a basemap; we'll use the "basemap_gglayer" from the "basemaps" package
+
+```{r, out.width = "35%"}
+basemap_ggplot(city_sf)
+```
+
+---
+
+# Add a basemap
+
+`basemap_gglayer` uses the Web Mercator CRS (EPSG: 3857); we need to transform our other datasets to that CRS.
+
+```{r, out.width = "35%", message = FALSE, warning = FALSE}
+schools_sf_web <- schools_sf %>% st_transform(3857)
+
+basemap_ggplot(city_sf) +
+  geom_sf(data = schools_sf_web,
+          aes(color = "Schools")) +
+  labs(fill = "Area",
+       color = NULL) +
+  scale_color_manual(values = "black") +
+  theme_void()
+```
+
 
 ---
 
