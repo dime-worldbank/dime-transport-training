@@ -25,3 +25,11 @@ This material was developed by the [DIME ieConnect](https://www.worldbank.org/en
 * [Spatial Data Science: With Applications in R](https://r-spatial.org/book/)
 * [R for transport planning](https://www.robinlovelace.net/presentations/user2019-r-for-transport-planning.html#1)
 
+## Useful R Packages
+
+* [stplanr](https://github.com/ropensci/stplanr) Sustainable transport planning with R
+* [googletraffic](https://github.com/dime-worldbank/googletraffic) Create Georeferenced Traffic Data from the Google Maps Javascript API
+* [mapboxapi](https://walker-data.com/mapboxapi/) R package that interfaces with Mapbox web services APIs
+* [blackmarbler](https://github.com/worldbank/blackmarbler) Use nighttime lights data from NASA's Black Marble
+* [osrm](https://github.com/riatelab/osrm) Interface Between R and the OpenStreetMap-Based Routing Service OSRM
+
