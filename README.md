@@ -27,9 +27,11 @@ This material was developed by the [DIME ieConnect](https://www.worldbank.org/en
 
 ## Useful R Packages
 
-* [stplanr](https://github.com/ropensci/stplanr) Sustainable transport planning with R
+* [blackmarbler](https://github.com/worldbank/blackmarbler) Use nighttime lights data from NASA's Black Marble
 * [googletraffic](https://github.com/dime-worldbank/googletraffic) Create Georeferenced Traffic Data from the Google Maps Javascript API
 * [mapboxapi](https://walker-data.com/mapboxapi/) R package that interfaces with Mapbox web services APIs
-* [blackmarbler](https://github.com/worldbank/blackmarbler) Use nighttime lights data from NASA's Black Marble
+* [osmdata](https://github.com/ropensci/osmdata) Access OpenStreetMap data
 * [osrm](https://github.com/riatelab/osrm) Interface Between R and the OpenStreetMap-Based Routing Service OSRM
+* [stplanr](https://github.com/ropensci/stplanr) Sustainable transport planning with R
+
 
